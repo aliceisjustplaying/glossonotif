@@ -12,6 +12,22 @@ Glossonotif logs into `glosso.ink`, polls `/notifications`, dedupes notification
 - Uses a small web UI for login, subscription, test push, and manual polling.
 - Redirects iOS PWA launches to the latest pushed Glosso URL when iOS ignores the service worker click target.
 
+## Use the Hosted Service
+
+Open `https://glosson.mosphere.at/` and log in with your Glosso username/password.
+
+### iOS
+
+Use Safari. Log in, tap Share, tap Add to Home Screen, open the new home-screen app, then tap Enable push.
+
+If a push opens the gateway instead of Glosso, delete the home-screen icon and add it again so iOS refreshes the PWA manifest.
+
+### Android
+
+Use Chrome. Log in, install/add the app when prompted, open it, then tap Enable push.
+
+Android push can be unreliable because Google fucking sucks: battery optimization, notification permissions, and Play Services can delay or drop pushes. If it stops working, reopen the app and tap Enable push again.
+
 ## Setup
 
 ```sh
