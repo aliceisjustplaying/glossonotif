@@ -12,27 +12,9 @@ Glossonotif logs into `glosso.ink`, polls `/notifications`, dedupes notification
 - Uses a small web UI for login, subscription, test push, and manual polling.
 - Shows install instructions in regular browsers, then enables push controls inside the installed PWA.
 
-## Use the Hosted Service
+## Hosted Instance
 
-Open `https://glosson.mosphere.at/` and log in with your Glosso username/password.
-
-Security note: using the hosted service means trusting the host operator with your Glosso login. Self-host if you do not want to share that trust.
-
-### iOS
-
-Use Safari. Log in, tap Share, tap Add to Home Screen, open the new home-screen app, then tap Enable push.
-
-After enabling push, open Glosso Push once from the setup prompt, then use its Open Glosso button and log in there too. This keeps the first notification tap from getting swallowed by Glosso login.
-
-If a push opens the gateway instead of Glosso, delete the home-screen icon and add it again so iOS refreshes the PWA manifest and service worker.
-
-### Android
-
-Use Chrome. Log in, install/add the app when prompted, open it, then tap Enable push.
-
-After enabling push, open Glosso Push once from the setup prompt, then use its Open Glosso button and log in there too.
-
-Android push can be unreliable because Google fucking sucks: battery optimization, notification permissions, and Play Services can delay or drop pushes. If it stops working, reopen the app and tap Enable push again.
+The live `glosson.mosphere.at` instance is private and locked to the Glosso user `alice`. Other users should self-host their own instance.
 
 ## Setup
 
@@ -46,6 +28,7 @@ Edit `.env`:
 ```sh
 GLOSSO_USER=alice
 GLOSSO_PASS=...
+ALLOWED_GLOSSO_USER=alice
 GATEWAY_TOKEN=...
 WEB_PUSH_SUBJECT=mailto:you@example.com
 ```

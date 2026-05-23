@@ -23,6 +23,7 @@ const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 3099);
 const pollMs = Math.max(15, Number(process.env.POLL_SECONDS || 60)) * 1000;
 const gatewayToken = process.env.GATEWAY_TOKEN || '';
+const allowedGlossoUser = (process.env.ALLOWED_GLOSSO_USER || '').trim().toLowerCase();
 
 if (!process.env.GLOSSO_USER || !process.env.GLOSSO_PASS) {
   throw new Error('GLOSSO_USER and GLOSSO_PASS are required in .env');
@@ -66,6 +67,9 @@ app.get('/launch', (req, res) => {
 app.post('/login', (req, res) => {
   const user = req.body?.username || '';
   const pass = req.body?.password || '';
+  if (!allowedUser(user)) {
+    return res.status(403).type('html').send(renderLoginPage('This gateway is private.'));
+  }
   if (!safeEqual(user, process.env.GLOSSO_USER) || !safeEqual(pass, process.env.GLOSSO_PASS)) {
     return res.status(401).type('html').send(renderLoginPage('Wrong username or password.'));
   }
@@ -187,7 +191,12 @@ function hasBasicAuth(req) {
 
   const user = decoded.slice(0, split);
   const pass = decoded.slice(split + 1);
-  return safeEqual(user, process.env.GLOSSO_USER) && safeEqual(pass, process.env.GLOSSO_PASS);
+  return allowedUser(user) && safeEqual(user, process.env.GLOSSO_USER) && safeEqual(pass, process.env.GLOSSO_PASS);
+}
+
+function allowedUser(user) {
+  if (!allowedGlossoUser) return true;
+  return String(user).trim().toLowerCase() === allowedGlossoUser;
 }
 
 function safeEqual(left = '', right = '') {
