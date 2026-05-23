@@ -10,7 +10,7 @@ Glossonotif logs into `glosso.ink`, polls `/notifications`, dedupes notification
 - Sends Web Push notifications with VAPID.
 - Stores browser subscriptions locally.
 - Uses a small web UI for login, subscription, test push, and manual polling.
-- Redirects iOS PWA launches to the latest pushed Glosso URL when iOS ignores the service worker click target.
+- Shows install instructions in regular browsers, then enables push controls inside the installed PWA.
 
 ## Use the Hosted Service
 
@@ -20,11 +20,15 @@ Open `https://glosson.mosphere.at/` and log in with your Glosso username/passwor
 
 Use Safari. Log in, tap Share, tap Add to Home Screen, open the new home-screen app, then tap Enable push.
 
+After enabling push, open Glosso once from the setup prompt and log in there too. This keeps the first notification tap from getting swallowed by Glosso login.
+
 If a push opens the gateway instead of Glosso, delete the home-screen icon and add it again so iOS refreshes the PWA manifest and service worker.
 
 ### Android
 
 Use Chrome. Log in, install/add the app when prompted, open it, then tap Enable push.
+
+After enabling push, open Glosso once from the setup prompt and log in there too.
 
 Android push can be unreliable because Google fucking sucks: battery optimization, notification permissions, and Play Services can delay or drop pushes. If it stops working, reopen the app and tap Enable push again.
 
