@@ -16,6 +16,8 @@ Glossonotif logs into `glosso.ink`, polls `/notifications`, dedupes notification
 
 Open `https://glosson.mosphere.at/` and log in with your Glosso username/password.
 
+Security note: using the hosted service means trusting the host operator with your Glosso login. Self-host if you do not want to share that trust.
+
 ### iOS
 
 Use Safari. Log in, tap Share, tap Add to Home Screen, open the new home-screen app, then tap Enable push.
