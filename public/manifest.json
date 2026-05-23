@@ -1,0 +1,15 @@
+{
+  "name": "Glosso push gateway",
+  "short_name": "Glosso push",
+  "start_url": "/launch",
+  "display": "standalone",
+  "background_color": "#101014",
+  "theme_color": "#c33cff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
