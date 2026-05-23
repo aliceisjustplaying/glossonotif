@@ -59,9 +59,9 @@ async function unsubscribe() {
 }
 
 async function currentSubscription() {
-  if (!('serviceWorker' in navigator)) return null;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
   const registration = await navigator.serviceWorker.getRegistration();
-  return registration ? registration.pushManager.getSubscription() : null;
+  return registration?.pushManager ? registration.pushManager.getSubscription() : null;
 }
 
 async function updateServiceWorker() {
