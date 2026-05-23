@@ -11,7 +11,19 @@
     <main>
       <h1>Glosso push gateway</h1>
       <p id="status">checking status...</p>
-      <div class="actions">
+      <section id="install-instructions" class="setup" hidden>
+        <p>Install this as an app to enable push notifications.</p>
+        <p><strong>iOS:</strong> open this page in Safari, tap Share, then Add to Home Screen. Open the new home-screen app to enable push.</p>
+        <p><strong>Android:</strong> open this page in Chrome, use Install app or Add to Home screen, then open the installed app to enable push.</p>
+      </section>
+      <section id="glosso-setup" class="setup" hidden>
+        <p>Finish setup by logging into Glosso once. This prevents the first push from landing on Glosso login and losing the notification link.</p>
+        <div class="actions">
+          <a class="button" href="https://glosso.ink/notifications" target="_blank" rel="noopener">Open Glosso</a>
+          <button id="ready" type="button">I'm logged into Glosso</button>
+        </div>
+      </section>
+      <div id="controls" class="actions">
         <button id="subscribe">Enable push</button>
         <button id="test">Send test</button>
         <button id="poll">Poll now</button>

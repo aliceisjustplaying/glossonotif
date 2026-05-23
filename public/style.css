@@ -12,6 +12,10 @@ body {
   place-items: center;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 main {
   width: min(560px, calc(100vw - 32px));
 }
@@ -42,8 +46,33 @@ button {
   padding: 10px 14px;
 }
 
-button:hover {
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+button:hover:not(:disabled),
+.button:hover {
   background: #2c1d36;
+}
+
+.button {
+  border: 1px solid #3c3046;
+  border-radius: 8px;
+  background: #201728;
+  color: #f2edf7;
+  display: inline-block;
+  font: inherit;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+
+.setup {
+  border: 1px solid #3c3046;
+  border-radius: 8px;
+  background: #17111d;
+  margin: 18px 0;
+  padding: 14px;
 }
 
 pre {

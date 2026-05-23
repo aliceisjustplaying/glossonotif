@@ -4,20 +4,38 @@ if (token) localStorage.setItem('gatewayToken', token);
 
 const statusEl = document.getElementById('status');
 const logEl = document.getElementById('log');
+const installEl = document.getElementById('install-instructions');
+const setupEl = document.getElementById('glosso-setup');
+const controlsEl = document.getElementById('controls');
+const testButton = document.getElementById('test');
+const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 const headers = () => ({ 'content-type': 'application/json', 'x-gateway-token': token });
 
 document.getElementById('subscribe').addEventListener('click', () => run(subscribe));
 document.getElementById('unsubscribe').addEventListener('click', () => run(unsubscribe));
-document.getElementById('test').addEventListener('click', () => run(() => post('/api/test')));
+testButton.addEventListener('click', () => run(() => post('/api/test')));
 document.getElementById('poll').addEventListener('click', () => run(() => post('/api/poll-now')));
+document.getElementById('ready').addEventListener('click', () => {
+  localStorage.setItem('glossoLoggedIn', 'true');
+  updateSetupUi(true);
+});
 
-updateServiceWorker();
-refresh();
+if (standalone) {
+  updateServiceWorker();
+  refresh();
+} else {
+  installEl.hidden = false;
+  setupEl.hidden = true;
+  controlsEl.hidden = true;
+  statusEl.textContent = 'install the app to enable push';
+  logEl.hidden = true;
+}
 
 async function refresh() {
   try {
     const config = await get('/api/config');
     const sub = await currentSubscription();
+    updateSetupUi(!!sub);
     statusEl.textContent = sub
       ? `push enabled, ${config.subscriberCount} subscriber(s), polling every ${config.pollSeconds}s`
       : `push not enabled, polling every ${config.pollSeconds}s`;
@@ -46,6 +64,8 @@ async function subscribe() {
   });
 
   await post('/api/subscribe', subscription.toJSON());
+  localStorage.removeItem('glossoLoggedIn');
+  updateSetupUi(true);
   await refresh();
 }
 
@@ -56,6 +76,14 @@ async function unsubscribe() {
     await subscription.unsubscribe();
   }
   await refresh();
+}
+
+function updateSetupUi(isSubscribed) {
+  if (!standalone) return;
+  const needsGlossoLogin = isSubscribed && localStorage.getItem('glossoLoggedIn') !== 'true';
+  setupEl.hidden = !needsGlossoLogin;
+  testButton.disabled = needsGlossoLogin;
+  testButton.title = needsGlossoLogin ? 'Open Glosso and mark setup done first.' : '';
 }
 
 async function currentSubscription() {
