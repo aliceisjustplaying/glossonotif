@@ -12,11 +12,6 @@ document.getElementById('test').addEventListener('click', () => run(() => post('
 document.getElementById('poll').addEventListener('click', () => run(() => post('/api/poll-now')));
 
 updateServiceWorker();
-redirectPwaLaunchToGlosso();
-window.addEventListener('focus', redirectPwaLaunchToGlosso);
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') redirectPwaLaunchToGlosso();
-});
 refresh();
 
 async function refresh() {
@@ -28,7 +23,7 @@ async function refresh() {
       : `push not enabled, polling every ${config.pollSeconds}s`;
     write(config);
   } catch (error) {
-    statusEl.textContent = token ? error.message : 'missing token; open this page with ?token=...';
+    statusEl.textContent = error.message === 'unauthorized' ? 'log in to enable push' : error.message;
   }
 }
 
@@ -76,21 +71,6 @@ async function updateServiceWorker() {
     await registration.update();
   } catch {
     // Push setup reports registration errors when the user taps Enable push.
-  }
-}
-
-async function redirectPwaLaunchToGlosso() {
-  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  if (!standalone) return;
-
-  try {
-    const target = await get('/api/launch-target');
-    if (!target.url || !target.at) return;
-    if (localStorage.getItem('lastConsumedLaunchAt') === target.at) return;
-    localStorage.setItem('lastConsumedLaunchAt', target.at);
-    location.href = target.url;
-  } catch {
-    // The normal status panel will show auth/network errors.
   }
 }
 

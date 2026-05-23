@@ -20,7 +20,7 @@ Open `https://glosson.mosphere.at/` and log in with your Glosso username/passwor
 
 Use Safari. Log in, tap Share, tap Add to Home Screen, open the new home-screen app, then tap Enable push.
 
-If a push opens the gateway instead of Glosso, delete the home-screen icon and add it again so iOS refreshes the PWA manifest.
+If a push opens the gateway instead of Glosso, delete the home-screen icon and add it again so iOS refreshes the PWA manifest and service worker.
 
 ### Android
 

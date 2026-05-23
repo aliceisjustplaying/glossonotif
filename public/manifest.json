@@ -1,7 +1,7 @@
 {
   "name": "Glosso push gateway",
   "short_name": "Glosso push",
-  "start_url": "/launch",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#101014",
   "theme_color": "#c33cff",
