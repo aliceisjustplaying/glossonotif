@@ -20,7 +20,7 @@ Open `https://glosson.mosphere.at/` and log in with your Glosso username/passwor
 
 Use Safari. Log in, tap Share, tap Add to Home Screen, open the new home-screen app, then tap Enable push.
 
-After enabling push, open Glosso once from the setup prompt and log in there too. This keeps the first notification tap from getting swallowed by Glosso login.
+After enabling push, open Glosso Push once from the setup prompt, then use its Open Glosso button and log in there too. This keeps the first notification tap from getting swallowed by Glosso login.
 
 If a push opens the gateway instead of Glosso, delete the home-screen icon and add it again so iOS refreshes the PWA manifest and service worker.
 
@@ -28,7 +28,7 @@ If a push opens the gateway instead of Glosso, delete the home-screen icon and a
 
 Use Chrome. Log in, install/add the app when prompted, open it, then tap Enable push.
 
-After enabling push, open Glosso once from the setup prompt and log in there too.
+After enabling push, open Glosso Push once from the setup prompt, then use its Open Glosso button and log in there too.
 
 Android push can be unreliable because Google fucking sucks: battery optimization, notification permissions, and Play Services can delay or drop pushes. If it stops working, reopen the app and tap Enable push again.
 
