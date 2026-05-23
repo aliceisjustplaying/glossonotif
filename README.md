@@ -7,6 +7,7 @@ Glossonotif logs into `glosso.ink`, polls `/notifications`, dedupes notification
 ## Features
 
 - Polls Glosso notifications on a fixed interval.
+- Polls Ranko every 30 minutes and pushes when raters increase, ratings increase by 10+, or another trait becomes revealed.
 - Sends Web Push notifications with VAPID.
 - Stores browser subscriptions locally.
 - Uses a small web UI for login, subscription, test push, and manual polling.
@@ -49,6 +50,7 @@ Edit `.env`:
 GLOSSO_USER=alice
 GLOSSO_PASS=...
 ALLOWED_GLOSSO_USER=alice
+RANKO_POLL_MINUTES=30
 GATEWAY_TOKEN=...
 WEB_PUSH_SUBJECT=mailto:you@example.com
 ```
@@ -100,7 +102,7 @@ WantedBy=multi-user.target
 Runtime files are written under `data/`:
 
 - `vapid.json`: generated VAPID key pair
-- `state.json`: seen notification IDs, browser subscriptions, latest launch target
+- `state.json`: seen notification IDs, browser subscriptions, latest launch target, latest Ranko counters
 
 These are intentionally ignored by git.
 

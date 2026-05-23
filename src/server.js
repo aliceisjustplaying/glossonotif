@@ -22,6 +22,7 @@ const glossoBase = 'https://glosso.ink';
 const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 3099);
 const pollMs = Math.max(15, Number(process.env.POLL_SECONDS || 60)) * 1000;
+const rankoPollMs = Math.max(5, Number(process.env.RANKO_POLL_MINUTES || 30)) * 60 * 1000;
 const gatewayToken = process.env.GATEWAY_TOKEN || '';
 const allowedGlossoUser = (process.env.ALLOWED_GLOSSO_USER || '').trim().toLowerCase();
 
@@ -40,16 +41,27 @@ webpush.setVapidDetails(
 
 let state = await loadState();
 let pollTimer = null;
+let rankoTimer = null;
 let pollInFlight = false;
+let rankoPollInFlight = false;
 let lastPoll = null;
 let lastError = null;
+let lastRankoPoll = null;
+let lastRankoError = null;
 
 const app = express();
 app.use(express.json({ limit: '256kb' }));
 app.use(express.urlencoded({ extended: false }));
 
 app.get('/healthz', (_req, res) => {
-  res.json({ ok: true, lastPoll, lastError, subscriberCount: state.subscriptions.length });
+  res.json({
+    ok: true,
+    lastPoll,
+    lastError,
+    lastRankoPoll,
+    lastRankoError,
+    subscriberCount: state.subscriptions.length,
+  });
 });
 
 app.get('/login', (req, res) => {
@@ -109,6 +121,9 @@ app.get('/api/config', (req, res) => {
     subscriberCount: state.subscriptions.length,
     lastPoll,
     lastError,
+    rankoPollMinutes: Math.round(rankoPollMs / 60_000),
+    lastRankoPoll,
+    lastRankoError,
   });
 });
 
@@ -161,6 +176,7 @@ app.post('/api/poll-now', async (req, res) => {
 
 async function shutdown() {
   if (pollTimer) clearInterval(pollTimer);
+  if (rankoTimer) clearInterval(rankoTimer);
   await saveState();
   process.exit(0);
 }
@@ -329,6 +345,13 @@ async function pollOnce({ bootstrap = false, manual = false } = {}) {
 }
 
 async function fetchGlossoNotifications() {
+  const jar = await loginGlosso();
+  const html = await fetchText('/notifications', { jar });
+  if (!html.includes('Notifications')) throw new Error('Glosso login did not reach notifications page');
+  return parseNotifications(html);
+}
+
+async function loginGlosso() {
   const jar = new CookieJar();
   const loginPage = await fetchText('/', { jar });
   const csrf = extractCsrf(loginPage);
@@ -347,14 +370,92 @@ async function fetchGlossoNotifications() {
     body,
   });
 
-  const html = await fetchText('/notifications', { jar });
-  if (!html.includes('Notifications')) throw new Error('Glosso login did not reach notifications page');
-  return parseNotifications(html);
+  return jar;
 }
 
 async function latestNotificationUrl() {
   const notifications = await fetchGlossoNotifications();
   return notifications[0]?.url || null;
+}
+
+async function pollRankoOnce({ bootstrap = false } = {}) {
+  if (rankoPollInFlight) return { ok: false, skipped: 'ranko poll already running' };
+  rankoPollInFlight = true;
+  try {
+    const snapshot = await fetchRankoSnapshot();
+    const previous = state.rankoNotifiedSnapshot || state.rankoSnapshot;
+    state.rankoSnapshot = snapshot;
+    lastRankoPoll = new Date().toISOString();
+    lastRankoError = null;
+
+    if (bootstrap || !previous) {
+      state.rankoNotifiedSnapshot = snapshot;
+      await saveState();
+      return { ok: true, bootstrapped: true, snapshot, pushed: 0 };
+    }
+
+    const ratingDelta = snapshot.ratings - previous.ratings;
+    const raterDelta = snapshot.raters - previous.raters;
+    const revealedDelta = rankoRevealedDelta(snapshot, previous);
+    if (raterDelta < 1 && ratingDelta < 10 && revealedDelta < 1) {
+      await saveState();
+      return { ok: true, snapshot, ratingDelta, raterDelta, revealedDelta, pushed: 0 };
+    }
+
+    const sent = await pushToAll({
+      title: 'Ranko',
+      body: rankoPushBody(snapshot, ratingDelta, raterDelta, revealedDelta),
+      url: `${glossoBase}/ranko`,
+      tag: `ranko-${snapshot.ratings}-${snapshot.raters}-${snapshot.revealed ?? 'unknown'}`,
+    });
+    state.rankoNotifiedSnapshot = snapshot;
+    await saveState();
+    return { ok: true, snapshot, ratingDelta, raterDelta, revealedDelta, pushed: sent };
+  } catch (error) {
+    lastRankoError = error.message;
+    throw error;
+  } finally {
+    rankoPollInFlight = false;
+  }
+}
+
+async function fetchRankoSnapshot() {
+  const jar = await loginGlosso();
+  const html = await fetchText('/ranko', { jar });
+  if (!html.includes('Ranko')) throw new Error('Glosso login did not reach Ranko page');
+  return parseRankoSnapshot(html);
+}
+
+function rankoPushBody(snapshot, ratingDelta, raterDelta, revealedDelta) {
+  const parts = [];
+  if (revealedDelta >= 1) parts.push(`+${revealedDelta} revealed trait${revealedDelta === 1 ? '' : 's'}`);
+  if (raterDelta >= 1) parts.push(`+${raterDelta} rater${raterDelta === 1 ? '' : 's'}`);
+  if (ratingDelta >= 1) parts.push(`+${ratingDelta} rating${ratingDelta === 1 ? '' : 's'}`);
+  const revealed = snapshot.revealed == null || snapshot.totalAdjectives == null
+    ? ''
+    : `, ${snapshot.revealed}/${snapshot.totalAdjectives} revealed`;
+  return `${parts.join(', ')}. Now ${snapshot.ratings} ratings from ${snapshot.raters} raters${revealed}.`;
+}
+
+function rankoRevealedDelta(snapshot, previous) {
+  if (!Number.isInteger(snapshot.revealed) || !Number.isInteger(previous.revealed)) return 0;
+  return snapshot.revealed - previous.revealed;
+}
+
+function parseRankoSnapshot(html) {
+  const $ = cheerio.load(html);
+  const sub = $('.rk-report .sub').first().text().replace(/\s+/g, ' ').trim();
+  const totals = sub.match(/(\d+)\s+ratings?\s+from\s+(\d+)\s+raters?/i);
+  if (!totals) throw new Error('could not find Ranko rating totals');
+
+  const revealedTotals = sub.match(/(\d+)\s*\/\s*(\d+)\s+revealed/i);
+  return {
+    ratings: Number.parseInt(totals[1], 10),
+    raters: Number.parseInt(totals[2], 10),
+    revealed: revealedTotals ? Number.parseInt(revealedTotals[1], 10) : null,
+    totalAdjectives: revealedTotals ? Number.parseInt(revealedTotals[2], 10) : null,
+    fetchedAt: new Date().toISOString(),
+  };
 }
 
 async function fetchText(url, { jar, method = 'GET', headers = {}, body } = {}) {
@@ -462,14 +563,27 @@ async function loadState() {
       subscriptions: Array.isArray(parsed.subscriptions) ? parsed.subscriptions : [],
       lastLaunchUrl: typeof parsed.lastLaunchUrl === 'string' ? parsed.lastLaunchUrl : null,
       lastLaunchAt: typeof parsed.lastLaunchAt === 'string' ? parsed.lastLaunchAt : null,
+      rankoSnapshot: validRankoSnapshot(parsed.rankoSnapshot) ? parsed.rankoSnapshot : null,
+      rankoNotifiedSnapshot: validRankoSnapshot(parsed.rankoNotifiedSnapshot) ? parsed.rankoNotifiedSnapshot : null,
     };
   } catch {
-    return { seenIds: [], subscriptions: [], lastLaunchUrl: null, lastLaunchAt: null };
+    return {
+      seenIds: [],
+      subscriptions: [],
+      lastLaunchUrl: null,
+      lastLaunchAt: null,
+      rankoSnapshot: null,
+      rankoNotifiedSnapshot: null,
+    };
   }
 }
 
 async function saveState() {
   await fs.writeFile(statePath, JSON.stringify(state, null, 2));
+}
+
+function validRankoSnapshot(snapshot) {
+  return Number.isInteger(snapshot?.ratings) && Number.isInteger(snapshot?.raters);
 }
 
 class CookieJar {
@@ -504,12 +618,19 @@ app.listen(port, host, () => {
 });
 
 await pollOnce({ bootstrap: true });
+await pollRankoOnce({ bootstrap: !state.rankoSnapshot });
 pollTimer = setInterval(() => {
   pollOnce().catch((error) => {
     lastError = error.message;
     console.error('poll failed:', error);
   });
 }, pollMs);
+rankoTimer = setInterval(() => {
+  pollRankoOnce().catch((error) => {
+    lastRankoError = error.message;
+    console.error('ranko poll failed:', error);
+  });
+}, rankoPollMs);
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
