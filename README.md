@@ -16,6 +16,26 @@ Glossonotif logs into `glosso.ink`, polls `/notifications`, dedupes notification
 
 The live `glosson.mosphere.at` instance is private and locked to the Glosso user `alice`. Other users should self-host their own instance.
 
+## End-User Install
+
+Open your Glossonotif URL and log in with your Glosso username/password.
+
+### iOS
+
+Use Safari. Log in, tap Share, tap Add to Home Screen, open the new home-screen app, then tap Enable push.
+
+After enabling push, open Glosso Push once from the setup prompt, then use its Open Glosso button and log in there too. This keeps the first notification tap from getting swallowed by Glosso login.
+
+If a push opens the gateway instead of Glosso, delete the home-screen icon and add it again so iOS refreshes the PWA manifest and service worker.
+
+### Android
+
+Use Chrome. Log in, install/add the app when prompted, open it, then tap Enable push.
+
+After enabling push, open Glosso Push once from the setup prompt, then use its Open Glosso button and log in there too.
+
+Android push can be unreliable because Google fucking sucks: battery optimization, notification permissions, and Play Services can delay or drop pushes. If it stops working, reopen the app and tap Enable push again.
+
 ## Setup
 
 ```sh
